@@ -1,13 +1,10 @@
 ﻿Imports System.Net
-Imports System.Windows.Forms.VisualStyles.VisualStyleElement.Window
 
 Public Class Form1
     Public isDrawing As Boolean = False
     Public startPoint As Point
     Public currentbutton As DraggableButton
-    Public currentAddButton As AddButton
-    Public Lines As New List(Of (familyMember, familyMember))
-    Public FamilyToLineButtonLine As New List(Of (familyMember, AddButton))
+    Public Lines As New List(Of (DraggableButton, DraggableButton))
     Public LineButtons As New List(Of LineButtons)
     Public itemMoving As Boolean = False
     Public affecteditems As List(Of Button)
@@ -15,9 +12,6 @@ Public Class Form1
     Public dragbuttons As New List(Of DraggableButton)
     Public unimportantLines As New List(Of (Point, Point))
     Public hidden As Boolean
-    Public families As New List(Of Family)
-    Public familyMembers As New List(Of familyMember)
-    Public currentFamilymember As familyMember
     'Make sure the generations are in the correct order
     'add ability to remove button/textbox
     'Add ability to add a child without needing another parent, a CHILD button appears when two buttons connected
@@ -30,18 +24,9 @@ Public Class Form1
         Dim button As New DraggableButton()
         dragbuttons.Add(button)
         Dim textbox As New DraggableTextbox()
+        currentbutton = button
         button.myTextbox(textbox)
         textbox.myButton(button)
-        Dim initbuttonlist As New List(Of DraggableButton)
-        initbuttonlist.Add(button)
-        Dim member As New familyMember(textbox, New List(Of DraggableButton), button)
-        Dim family As New Family(member)
-        member.family = family
-        currentFamilymember = member
-        currentbutton = button
-        button.FamilyMembership = member
-        textbox.FamilyMembership = member
-
         Me.Controls.Add(textbox)
         Me.Controls.Add(button)
         isDrawing = False
@@ -78,28 +63,25 @@ Public Class Form1
         Dim midpoints As New List(Of Point)
         If itemMoving = True Then
             For Each item In Lines
-                If item.Item1.addButton.isLineButton = False And item.Item2.addButton.isLineButton = False Then
-                    e.Graphics.DrawLine(Pens.Black, middlelocation(item.Item1.addButton), middlelocation(item.Item2.addButton))
+                If item.Item1.isLineButton = False And item.Item2.isLineButton = False Then
+                    e.Graphics.DrawLine(Pens.Black, middlelocation(item.Item1), middlelocation(item.Item2))
                 Else
-                    If item.Item1.addButton.isLineButton Then
-                        DrawLine(middlelocation(item.Item1.addButton), middlelocation(item.Item2.addButton))
+                    If item.Item1.isLineButton Then
+                        DrawLine(middlelocation(item.Item1), middlelocation(item.Item2))
                     Else
-                        DrawLine(middlelocation(item.Item2.addButton), middlelocation(item.Item1.addButton))
+                        DrawLine(middlelocation(item.Item2), middlelocation(item.Item1))
                     End If
 
                 End If
 
-                If item.Item1.addButton.isLineButton = False Then
+                If item.Item1.isLineButton = False Then
 
-                    e.Graphics.DrawLine(Pens.Black, middlelocation(item.Item1.addButton), middlelocationtextbox(item.Item1.associatedTextbox))
+                    e.Graphics.DrawLine(Pens.Black, middlelocation(item.Item1), middlelocationtextbox(item.Item1.associatedTextbox))
                 End If
-                If item.Item2.addButton.isLineButton = False Then
-                    e.Graphics.DrawLine(Pens.Black, middlelocation(item.Item2.addButton), middlelocationtextbox(item.Item2.associatedTextbox))
+                If item.Item2.isLineButton = False Then
+                    e.Graphics.DrawLine(Pens.Black, middlelocation(item.Item2), middlelocationtextbox(item.Item2.associatedTextbox))
                 End If
-                midpoints.Add(New Point((middlelocation(item.Item1.addButton).X + middlelocation(item.Item2.addButton).X) / 2, (middlelocation(item.Item1.addButton).Y + middlelocation(item.Item2.addButton).Y) / 2))
-            Next
-            For Each item In FamilyToLineButtonLine
-                DrawLine(middlelocation(item.Item2), middlelocation(item.Item1.addButton))
+                midpoints.Add(New Point((middlelocation(item.Item1).X + middlelocation(item.Item2).X) / 2, (middlelocation(item.Item1).Y + middlelocation(item.Item2).Y) / 2))
             Next
             For i = 0 To midpoints.Count - 1
                 If LineButtons(i).mode = True Then
@@ -110,7 +92,7 @@ Public Class Form1
             Next
         End If
     End Sub
-    Public Function middlelocation(btn As DraggableButton)
+    Public Function middlelocation(btn As Button)
         Dim middleX As Integer
         Dim middleY As Integer
 
@@ -154,14 +136,14 @@ End Class
 
 Public Class LineButtons
 
-    Public btn1 As AddButton
+    Private btn1 As AddButton
     Private btn2 As RemoveButton
     Private myLocation As Point
-    Private myReference As Family
+    Private myReference As (Button, Button)
     Public mode As Boolean
 
 
-    Public Sub New(reference As Family, location As Point, onOff As Boolean)
+    Public Sub New(reference As (Button, Button), location As Point, onOff As Boolean)
         mode = onOff
         If onOff = True Then
             myLocation = location
@@ -170,13 +152,11 @@ Public Class LineButtons
             btn1 = New AddButton
             btn1.Size = New Size(20, 20)
             btn1.Location = New Point(location.X - 10, location.Y)
-            btn1.myreference = myReference
             Form1.Controls.Add(btn1)
-
 
             'Create the second button
             btn2 = New RemoveButton
-            btn2.line = (myReference.husbandsandwives(0), myReference.husbandsandwives(1))
+            btn2.line = myReference
             btn2.linebutton = Me
             btn2.Size = New Size(20, 20)
             btn2.Location = New Point(location.X + 10, location.Y)
@@ -219,7 +199,7 @@ Public Class LineButtons
 End Class
 Public Class RemoveButton
     Inherits DraggableButton
-    Public line As (familyMember, familyMember)
+    Public line As (DraggableButton, DraggableButton)
     Public linebutton As LineButtons
     Public Sub New()
         Me.Text = "-"
@@ -228,12 +208,14 @@ Public Class RemoveButton
     Private Sub RemoveButton_Click(sender As Object, e As EventArgs) Handles Me.Click
         Form1.isDrawing = False
         Form1.Lines.Remove(line)
+        line.Item1.HusbandsAndWives.Remove(line.Item2)
+        line.Item2.HusbandsAndWives.Remove(line.Item1)
         linebutton.Remove()
     End Sub
 End Class
 Public Class AddButton
     Inherits DraggableButton
-    Public myreference As Family
+    Private line As (Button, Button)
     Public Sub New()
         Me.Text = "+"
         isLineButton = True
@@ -245,42 +227,6 @@ Public Class AddButton
 
         Form1.startPoint = Form1.middlelocation(Me)
         Form1.currentbutton = Me
-        Form1.currentAddButton = Me
-    End Sub
-    Public Function getreference()
-        Return myreference
-    End Function
-
-End Class
-Public Class Family
-    'class for combination of two people. If someone has been divorced an 
-    Public husbandsandwives As New List(Of familyMember)
-    Public children As New List(Of familyMember)
-    Public divorced As Boolean
-    Public Sub New(initialmember As familyMember)
-        husbandsandwives.Add(initialmember)
-    End Sub
-    Public Sub Merge(otherfamily As Family)
-        If divorced = True Then
-
-        Else
-            For Each person In otherfamily.husbandsandwives
-                husbandsandwives.Add(person)
-            Next
-        End If
-
-    End Sub
-
-End Class
-Public Class familyMember
-    Public associatedTextbox As DraggableTextbox
-    Public addButton As DraggableButton
-    Public associatedButtons As New List(Of DraggableButton)
-    Public family As Family
-    Public Sub New(textbox As DraggableTextbox, buttons As List(Of DraggableButton), myaddbutton As DraggableButton)
-        associatedTextbox = textbox
-        associatedButtons = buttons
-        addButton = myaddbutton
     End Sub
 
 End Class
@@ -291,7 +237,6 @@ Public Class DraggableTextbox
     Public buttonClicked As Boolean = False
     Private mouseLocation As Point
     Private associatedButton As DraggableButton
-    Public FamilyMembership As familyMember
 
     Public Sub New()
         Me.AllowDrop = True
@@ -316,12 +261,10 @@ Public Class DraggableTextbox
 
             Dim buttonpoint As New Point(Me.Location.X, Me.Location.Y + 60)
             associatedButton.Location = buttonpoint
-            For Each member In FamilyMembership.family.husbandsandwives
+            For Each member In associatedButton.HusbandsAndWives
+
                 member.associatedTextbox.Location = New Point(member.associatedTextbox.Location.X, buttonpoint.Y - 60)
-                For Each button In member.associatedButtons
-                    button.Location = New Point(button.Location.X, buttonpoint.Y)
-                Next
-                member.addButton.Location = New Point(member.addButton.Location.X, buttonpoint.Y)
+                member.Location = New Point(member.Location.X, buttonpoint.Y)
             Next
             If Equals(Form1.currentbutton, associatedButton) And buttonClicked = True Then
                 Form1.startPoint = buttonpoint
@@ -334,13 +277,12 @@ End Class
 Public Class DraggableButton
     Inherits Button
     Private mouseLocation As Point
-    Public reference As (familyMember, familyMember)
     Public associatedTextbox As DraggableTextbox
     Private _mouseDown As Boolean
     Private _startPoint As Point
     Public Clicked As Boolean
     Public isLineButton As Boolean = False
-    Public FamilyMembership As familyMember
+    Public HusbandsAndWives As New List(Of DraggableButton)
 
     Public Sub New()
         Me.AllowDrop = True
@@ -365,33 +307,18 @@ Public Class DraggableButton
         End If
         If Form1.isDrawing And Form1.currentbutton.Clicked = True Then
             'Makes sure that if two points are connected, the line that follows the mouse stops
-            If Form1.Lines.Contains((Form1.currentbutton.FamilyMembership, Me.FamilyMembership)) = False And Form1.Lines.Contains((Me.FamilyMembership, Form1.currentbutton.FamilyMembership)) = False And Equals(Form1.currentbutton, Me) = False Then
+            If Form1.Lines.Contains((Form1.currentbutton, Me)) = False And Form1.Lines.Contains((Me, Form1.currentbutton)) = False And Equals(Form1.currentbutton, Me) = False Then
                 Dim midPoint As New Point((Form1.middlelocation(Form1.currentbutton).X + Form1.middlelocation(Me).X) / 2, (Form1.middlelocation(Form1.currentbutton).Y + Form1.middlelocation(Me).Y) / 2)
                 If Form1.currentbutton.isLineButton = False And Me.isLineButton = False Then
-                    For Each person In FamilyMembership.family.husbandsandwives
-                        Form1.currentFamilymember.family.husbandsandwives.Add(person)
-                    Next
-                    Me.FamilyMembership.family = Form1.currentFamilymember.family
-                    Dim family As Family = Me.FamilyMembership.family
-
-                    Form1.families.Add(FamilyMembership.family)
-                    Dim linebutton As New LineButtons(family, midPoint, True)
-                    Form1.Lines.Add((Form1.currentbutton.FamilyMembership, Me.FamilyMembership))
+                    Form1.currentbutton.HusbandsAndWives.Add(Me)
+                    HusbandsAndWives.Add(Form1.currentbutton)
+                    Dim linebutton As New LineButtons((Form1.currentbutton, Me), midPoint, True)
+                    Form1.Lines.Add((Form1.currentbutton, Me))
                     Form1.LineButtons.Add(linebutton)
                 Else
-                    'Dim linebutton As New LineButtons((Form1.currentFamilymember, Me.FamilyMembership), midPoint, False)
-                    'the false here is the reason for the null exception
-                    If Me.isLineButton = True Then
-                        Form1.FamilyToLineButtonLine.Add((Form1.currentbutton.FamilyMembership, Me))
-                        Dim myfamily As Family = Form1.currentAddButton.getreference
-                        myfamily.children.Add(Form1.currentbutton.FamilyMembership)
-
-
-                    Else
-                        Form1.FamilyToLineButtonLine.Add((Me.FamilyMembership, Form1.currentbutton))
-                        Dim myfamily As Family = Form1.currentAddButton.getreference
-                        myfamily.children.Add(Form1.currentbutton.FamilyMembership)
-                    End If
+                    Dim linebutton As New LineButtons((Form1.currentbutton, Me), midPoint, False)
+                    Form1.Lines.Add((Form1.currentbutton, Me))
+                    Form1.LineButtons.Add(linebutton)
                 End If
             End If
             'adds to the list of permenant lines if the connection is not already made
@@ -401,7 +328,6 @@ Public Class DraggableButton
         Else
             Form1.isDrawing = True
         End If
-        Form1.currentFamilymember = FamilyMembership
         Form1.currentbutton = Me
 
     End Sub
