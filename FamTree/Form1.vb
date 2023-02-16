@@ -5,8 +5,9 @@ Public Class Form1
     Public isDrawing As Boolean = False
     Public startPoint As Point
     Public currentbutton As DraggableButton
+    Public currentAddButton As AddButton
     Public Lines As New List(Of (familyMember, familyMember))
-    Public FamilyToLineButtonLine As New List(Of (familyMember, DraggableButton))
+    Public FamilyToLineButtonLine As New List(Of (familyMember, AddButton))
     Public LineButtons As New List(Of LineButtons)
     Public itemMoving As Boolean = False
     Public affecteditems As List(Of Button)
@@ -156,11 +157,11 @@ Public Class LineButtons
     Public btn1 As AddButton
     Private btn2 As RemoveButton
     Private myLocation As Point
-    Private myReference As (familyMember, familyMember)
+    Private myReference As Family
     Public mode As Boolean
 
 
-    Public Sub New(reference As (familyMember, familyMember), location As Point, onOff As Boolean)
+    Public Sub New(reference As Family, location As Point, onOff As Boolean)
         mode = onOff
         If onOff = True Then
             myLocation = location
@@ -169,12 +170,13 @@ Public Class LineButtons
             btn1 = New AddButton
             btn1.Size = New Size(20, 20)
             btn1.Location = New Point(location.X - 10, location.Y)
+            btn1.myreference = myReference
             Form1.Controls.Add(btn1)
 
 
             'Create the second button
             btn2 = New RemoveButton
-            btn2.line = myReference
+            btn2.line = (myReference.husbandsandwives(0), myReference.husbandsandwives(1))
             btn2.linebutton = Me
             btn2.Size = New Size(20, 20)
             btn2.Location = New Point(location.X + 10, location.Y)
@@ -231,7 +233,7 @@ Public Class RemoveButton
 End Class
 Public Class AddButton
     Inherits DraggableButton
-    Private line As (Button, Button)
+    Public myreference As Family
     Public Sub New()
         Me.Text = "+"
         isLineButton = True
@@ -243,13 +245,17 @@ Public Class AddButton
 
         Form1.startPoint = Form1.middlelocation(Me)
         Form1.currentbutton = Me
+        Form1.currentAddButton = Me
     End Sub
+    Public Function getreference()
+        Return myreference
+    End Function
 
 End Class
 Public Class Family
     'class for combination of two people. If someone has been divorced an 
     Public husbandsandwives As New List(Of familyMember)
-    Public children As New List(Of DraggableButton)
+    Public children As New List(Of familyMember)
     Public divorced As Boolean
     Public Sub New(initialmember As familyMember)
         husbandsandwives.Add(initialmember)
@@ -328,6 +334,7 @@ End Class
 Public Class DraggableButton
     Inherits Button
     Private mouseLocation As Point
+    Public reference As (familyMember, familyMember)
     Public associatedTextbox As DraggableTextbox
     Private _mouseDown As Boolean
     Private _startPoint As Point
@@ -365,9 +372,10 @@ Public Class DraggableButton
                         Form1.currentFamilymember.family.husbandsandwives.Add(person)
                     Next
                     Me.FamilyMembership.family = Form1.currentFamilymember.family
+                    Dim family As Family = Me.FamilyMembership.family
 
                     Form1.families.Add(FamilyMembership.family)
-                    Dim linebutton As New LineButtons((Form1.currentbutton.FamilyMembership, Me.FamilyMembership), midPoint, True)
+                    Dim linebutton As New LineButtons(family, midPoint, True)
                     Form1.Lines.Add((Form1.currentbutton.FamilyMembership, Me.FamilyMembership))
                     Form1.LineButtons.Add(linebutton)
                 Else
@@ -375,9 +383,14 @@ Public Class DraggableButton
                     'the false here is the reason for the null exception
                     If Me.isLineButton = True Then
                         Form1.FamilyToLineButtonLine.Add((Form1.currentbutton.FamilyMembership, Me))
+                        Dim myfamily As Family = Form1.currentAddButton.getreference
+                        myfamily.children.Add(Form1.currentbutton.FamilyMembership)
+
+
                     Else
                         Form1.FamilyToLineButtonLine.Add((Me.FamilyMembership, Form1.currentbutton))
-
+                        Dim myfamily As Family = Form1.currentAddButton.getreference
+                        myfamily.children.Add(Form1.currentbutton.FamilyMembership)
                     End If
                 End If
             End If
