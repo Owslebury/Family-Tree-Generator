@@ -18,8 +18,6 @@ Public Class Form1
     'Add a save feature
     'Make the lines connect properly
     'Make a right angle line for children
-    '
-
     Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
         Dim button As New DraggableButton()
         dragbuttons.Add(button)
@@ -42,7 +40,6 @@ Public Class Form1
         Button1.Top = Me.ClientSize.Height - Button1.Height - 20
         Button2.Top = Me.ClientSize.Height - Button1.Height - 20
     End Sub
-
     Private Sub Form1_MouseMove(sender As Object, e As MouseEventArgs) Handles Me.MouseMove
         If isDrawing Then
             Me.Invalidate()
@@ -73,7 +70,6 @@ Public Class Form1
                     End If
 
                 End If
-
                 If item.Item1.isLineButton = False Then
 
                     e.Graphics.DrawLine(Pens.Black, middlelocation(item.Item1), middlelocationtextbox(item.Item1.associatedTextbox))
@@ -119,7 +115,6 @@ Public Class Form1
             For Each item In dragbuttons
                 item.Hide()
             Next
-
         Else
             Button2.Text = "Hide Buttons"
             ButtonsShowing = True
@@ -139,11 +134,11 @@ Public Class LineButtons
     Public btn1 As AddButton
     Private btn2 As RemoveButton
     Private myLocation As Point
-    Private myReference As (Button, Button)
+    Private myReference As (draggableButton, draggableButton)
     Public mode As Boolean
 
 
-    Public Sub New(reference As (Button, Button), location As Point, onOff As Boolean)
+    Public Sub New(reference As (DraggableButton, DraggableButton), location As Point, onOff As Boolean)
         mode = onOff
         If onOff = True Then
             myLocation = location
@@ -342,6 +337,7 @@ Public Class DraggableButton
                     If invalid = False Then
                         'Stops add button inbetween parents being added to the same parent
                         Form1.Lines.Add((Form1.currentbutton, Me))
+                        Form1.LineButtons.Add(linebutton)
                     End If
                 End If
                 End If
