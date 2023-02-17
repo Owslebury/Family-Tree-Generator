@@ -136,7 +136,7 @@ End Class
 
 Public Class LineButtons
 
-    Private btn1 As AddButton
+    Public btn1 As AddButton
     Private btn2 As RemoveButton
     Private myLocation As Point
     Private myReference As (Button, Button)
@@ -261,15 +261,21 @@ Public Class DraggableTextbox
 
             Dim buttonpoint As New Point(Me.Location.X, Me.Location.Y + 60)
             associatedButton.Location = buttonpoint
-            For Each member In associatedButton.HusbandsAndWives
-
-                member.associatedTextbox.Location = New Point(member.associatedTextbox.Location.X, buttonpoint.Y - 60)
-                member.Location = New Point(member.Location.X, buttonpoint.Y)
-            Next
+            updateLocation(buttonpoint, Me)
             If Equals(Form1.currentbutton, associatedButton) And buttonClicked = True Then
                 Form1.startPoint = buttonpoint
             End If
         End If
+    End Sub
+    Public Sub updateLocation(buttonpoint As Point, notThisTextbox As TextBox)
+
+        For Each member In Me.associatedButton.HusbandsAndWives
+            member.associatedTextbox.Location = New Point(member.associatedTextbox.Location.X, buttonpoint.Y - 60)
+            member.Location = New Point(member.Location.X, buttonpoint.Y)
+            If Equals(member.associatedTextbox, notThisTextbox) = False Then
+                member.associatedTextbox.updateLocation(buttonpoint, Me)
+            End If
+        Next
     End Sub
 
 End Class
@@ -283,6 +289,7 @@ Public Class DraggableButton
     Public Clicked As Boolean
     Public isLineButton As Boolean = False
     Public HusbandsAndWives As New List(Of DraggableButton)
+    Public myLineButtons As New List(Of LineButtons)
 
     Public Sub New()
         Me.AllowDrop = True
@@ -313,14 +320,31 @@ Public Class DraggableButton
                     Form1.currentbutton.HusbandsAndWives.Add(Me)
                     HusbandsAndWives.Add(Form1.currentbutton)
                     Dim linebutton As New LineButtons((Form1.currentbutton, Me), midPoint, True)
+                    myLineButtons.Add(linebutton)
                     Form1.Lines.Add((Form1.currentbutton, Me))
                     Form1.LineButtons.Add(linebutton)
                 Else
                     Dim linebutton As New LineButtons((Form1.currentbutton, Me), midPoint, False)
-                    Form1.Lines.Add((Form1.currentbutton, Me))
-                    Form1.LineButtons.Add(linebutton)
+                    Dim invalid As Boolean = False
+                    If Me.isLineButton Then
+                        For i = 0 To Form1.Lines.Count - 1
+                            If Equals(Form1.Lines(i).Item1, Form1.currentbutton) Or Equals(Form1.Lines(i).Item2, Form1.currentbutton) Then
+                                invalid = True
+                            End If
+                        Next
+                    Else
+                        For i = 0 To Form1.Lines.Count - 1
+                            If Equals(Form1.Lines(i).Item1, Me) Or Equals(Form1.Lines(i).Item2, Me) Then
+                                invalid = True
+                            End If
+                        Next
+                    End If
+                    If invalid = False Then
+                        'Stops add button inbetween parents being added to the same parent
+                        Form1.Lines.Add((Form1.currentbutton, Me))
+                    End If
                 End If
-            End If
+                End If
             'adds to the list of permenant lines if the connection is not already made
             Form1.isDrawing = False
             Clicked = False
