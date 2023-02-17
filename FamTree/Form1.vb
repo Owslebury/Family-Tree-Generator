@@ -12,6 +12,8 @@ Public Class Form1
     Public dragbuttons As New List(Of DraggableButton)
     Public unimportantLines As New List(Of (Point, Point))
     Public hidden As Boolean
+    Public currentParents As (DraggableButton, DraggableButton)
+    Public currentAddButton As AddButton
     'Make sure the generations are in the correct order
     'add ability to remove button/textbox
     'Add ability to add a child without needing another parent, a CHILD button appears when two buttons connected
@@ -151,11 +153,12 @@ Public Class LineButtons
 
             'Create the second button
             btn2 = New RemoveButton
-            btn2.line = myReference
+            btn2.line.Add(myReference)
             btn2.linebutton = Me
             btn2.Size = New Size(20, 20)
             btn2.Location = New Point(location.X + 10, location.Y)
             Form1.Controls.Add(btn2)
+            btn1.associatedRemove = btn2
             If Form1.ButtonsShowing = False Then
                 hide()
             Else
@@ -194,7 +197,7 @@ Public Class LineButtons
 End Class
 Public Class RemoveButton
     Inherits DraggableButton
-    Public line As (DraggableButton, DraggableButton)
+    Public line As New List(Of (DraggableButton, DraggableButton))
     Public linebutton As LineButtons
     Public Sub New()
         Me.Text = "-"
@@ -202,24 +205,29 @@ Public Class RemoveButton
     End Sub
     Private Sub RemoveButton_Click(sender As Object, e As EventArgs) Handles Me.Click
         Form1.isDrawing = False
-        Form1.Lines.Remove(line)
-        line.Item1.HusbandsAndWives.Remove(line.Item2)
-        line.Item2.HusbandsAndWives.Remove(line.Item1)
+        For Each item In line
+            Form1.Lines.Remove(item)
+            item.Item1.HusbandsAndWives.Remove(item.Item2)
+            item.Item2.HusbandsAndWives.Remove(item.Item1)
+        Next
         linebutton.Remove()
     End Sub
 End Class
 Public Class AddButton
     Inherits DraggableButton
-    Private line As (Button, Button)
+    Public line As (DraggableButton, DraggableButton)
+    Public associatedRemove As RemoveButton
     Public Sub New()
         Me.Text = "+"
         isLineButton = True
+        Form1.currentAddButton = Me
     End Sub
     Private Sub AddButton_Click(sender As Object, e As EventArgs) Handles Me.Click
         If Form1.isDrawing = False And Equals(Form1.currentbutton, Me) = False Then
             Form1.isDrawing = True
         End If
-
+        Form1.currentAddButton = Me
+        Form1.currentParents = line
         Form1.startPoint = Form1.middlelocation(Me)
         Form1.currentbutton = Me
     End Sub
@@ -285,6 +293,7 @@ Public Class DraggableButton
     Public isLineButton As Boolean = False
     Public HusbandsAndWives As New List(Of DraggableButton)
     Public myLineButtons As New List(Of LineButtons)
+    Public lines As New List(Of (DraggableButton, DraggableButton))
 
     Public Sub New()
         Me.AllowDrop = True
@@ -337,6 +346,7 @@ Public Class DraggableButton
                     If invalid = False Then
                         'Stops add button inbetween parents being added to the same parent
                         Form1.Lines.Add((Form1.currentbutton, Me))
+                        Form1.currentAddButton.associatedRemove.line.Add((Form1.currentbutton, Me))
                         Form1.LineButtons.Add(linebutton)
                     End If
                 End If
