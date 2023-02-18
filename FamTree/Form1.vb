@@ -52,6 +52,24 @@ Public Class Form1
         'this returns the line button for a given line
 
     End Function
+    Public Sub removeLine(mybutton As DraggableButton)
+        Dim linestoremove As New List(Of (DraggableButton, DraggableButton))
+        Dim linebuttonstoremove As New List(Of LineButtons)
+        For Each line In Lines
+            If Equals(line.Item1, mybutton) Or Equals(line.Item2, mybutton) Then
+                linebuttonstoremove.Add(getAssociatedlinebutton(line))
+                linestoremove.Add(line)
+            End If
+        Next
+        For Each line In linestoremove
+            Lines.Remove(line)
+        Next
+        For Each member In linebuttonstoremove
+            member.Remove()
+            LineButtons.Remove(member)
+        Next
+        Invalidate()
+    End Sub
     Private Sub Form1_Resize(sender As Object, e As EventArgs) Handles Me.Resize
         Button1.Left = (Me.ClientSize.Width - Button1.Width) / 2
         Button1.Top = Me.ClientSize.Height - Button1.Height - 20
@@ -265,12 +283,13 @@ Public Class RemoveFamilyMemberButton
     End Sub
     Private Sub RemoveFamily_Click(sender As Object, e As EventArgs) Handles Me.Click
         Form1.isDrawing = False
-        myFamily.associatedButton.HusbandsAndWives.Clear()
-        For Each line In Form1.Lines
-            If Equals(line.Item1, myFamily.associatedButton) Or Equals(line.Item2, myFamily.associatedButton) Then
-                Form1.Lines.Remove(line)
+        For Each person In myFamily.associatedButton.HusbandsAndWives
+            If Equals(person.associatedTextbox.remove, Me) Then
+                person.HusbandsAndWives.Remove(Me.associatedTextbox.associatedButton)
             End If
         Next
+        myFamily.associatedButton.HusbandsAndWives.Clear()
+        Form1.removeLine(myFamily.associatedButton)
         Form1.Controls.Remove(myFamily.associatedButton)
         Form1.Controls.Remove(myFamily)
         Form1.Controls.Remove(Me)
