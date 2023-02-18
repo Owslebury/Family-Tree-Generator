@@ -65,6 +65,7 @@ Public Class Form1
             Lines.Remove(line)
         Next
         For Each member In linebuttonstoremove
+            member.btn2.removeAll
             member.Remove()
             LineButtons.Remove(member)
         Next
@@ -174,7 +175,7 @@ End Class
 Public Class LineButtons
 
     Public btn1 As AddButton
-    Private btn2 As RemoveButton
+    Public btn2 As RemoveButton
     Private myLocation As Point
     Private myReference As (DraggableButton, DraggableButton)
     Public mode As Boolean
@@ -245,6 +246,15 @@ Public Class RemoveButton
         isLineButton = True
     End Sub
     Private Sub RemoveButton_Click(sender As Object, e As EventArgs) Handles Me.Click
+        Form1.isDrawing = False
+        For Each item In line
+            Form1.Lines.Remove(item)
+            item.Item1.HusbandsAndWives.Remove(item.Item2)
+            item.Item2.HusbandsAndWives.Remove(item.Item1)
+        Next
+        linebutton.Remove()
+    End Sub
+    Public Sub removeAll()
         Form1.isDrawing = False
         For Each item In line
             Form1.Lines.Remove(item)
