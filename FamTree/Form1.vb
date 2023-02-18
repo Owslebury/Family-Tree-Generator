@@ -6,6 +6,7 @@ Public Class Form1
     Public currentbutton As DraggableButton
     Public Lines As New List(Of (DraggableButton, DraggableButton))
     Public LineButtons As New List(Of LineButtons)
+    Public LineAssociatedButton As New List(Of ((DraggableButton, DraggableButton), LineButtons))
     Public itemMoving As Boolean = False
     Public affecteditems As List(Of Button)
     Public ButtonsShowing As Boolean = True
@@ -37,6 +38,15 @@ Public Class Form1
         isDrawing = False
         Me.Invalidate()
     End Sub
+    Public Function getAssociatedlinebutton(line As (DraggableButton, DraggableButton))
+        For Each myline In LineAssociatedButton
+            If Equals(myline.Item1, line) Then
+                Return myline.Item2
+            End If
+        Next
+        'this returns the line button for a given line
+
+    End Function
     Private Sub Form1_Resize(sender As Object, e As EventArgs) Handles Me.Resize
         Button1.Left = (Me.ClientSize.Width - Button1.Width) / 2
         Button1.Top = Me.ClientSize.Height - Button1.Height - 20
@@ -79,13 +89,15 @@ Public Class Form1
                 If item.Item2.isLineButton = False Then
                     e.Graphics.DrawLine(Pens.Black, middlelocation(item.Item2), middlelocationtextbox(item.Item2.associatedTextbox))
                 End If
-                midpoints.Add(New Point((middlelocation(item.Item1).X + middlelocation(item.Item2).X) / 2, (middlelocation(item.Item1).Y + middlelocation(item.Item2).Y) / 2))
+                If item.Item1.isLineButton = False And item.Item2.isLineButton = False Then
+                    midpoints.Add(New Point((middlelocation(item.Item1).X + middlelocation(item.Item2).X) / 2, (middlelocation(item.Item1).Y + middlelocation(item.Item2).Y) / 2))
+                End If
             Next
             For i = 0 To midpoints.Count - 1
                 If LineButtons(i).mode = True Then
                     LineButtons(i).updateLocation(New Point(midpoints(i).X, midpoints(i).Y - 10))
                     startPoint = currentbutton.Location
-                    'for + line button, makes sure the selection line follows it
+                    'For +line button, makes sure the selection line follows it
                 End If
             Next
         End If
@@ -136,8 +148,9 @@ Public Class LineButtons
     Public btn1 As AddButton
     Private btn2 As RemoveButton
     Private myLocation As Point
-    Private myReference As (draggableButton, draggableButton)
+    Private myReference As (DraggableButton, DraggableButton)
     Public mode As Boolean
+    Public midlocation As Point
 
 
     Public Sub New(reference As (DraggableButton, DraggableButton), location As Point, onOff As Boolean)
@@ -327,8 +340,9 @@ Public Class DraggableButton
                     myLineButtons.Add(linebutton)
                     Form1.Lines.Add((Form1.currentbutton, Me))
                     Form1.LineButtons.Add(linebutton)
+                    Form1.LineAssociatedButton.Add(((Form1.currentbutton, Me), linebutton))
                 Else
-                    Dim linebutton As New LineButtons((Form1.currentbutton, Me), midPoint, False)
+                    Dim linebutton As LineButtons = Form1.getAssociatedlinebutton((Form1.currentbutton, Me))
                     Dim invalid As Boolean = False
                     If Me.isLineButton Then
                         For i = 0 To Form1.Lines.Count - 1
@@ -347,10 +361,9 @@ Public Class DraggableButton
                         'Stops add button inbetween parents being added to the same parent
                         Form1.Lines.Add((Form1.currentbutton, Me))
                         Form1.currentAddButton.associatedRemove.line.Add((Form1.currentbutton, Me))
-                        Form1.LineButtons.Add(linebutton)
                     End If
                 End If
-                End If
+            End If
             'adds to the list of permenant lines if the connection is not already made
             Form1.isDrawing = False
             Clicked = False
