@@ -12,7 +12,6 @@ Public Class Form1
     Public ButtonsShowing As Boolean = True
     Public dragbuttons As New List(Of DraggableButton)
     Public unimportantLines As New List(Of (Point, Point))
-    Public hidden As Boolean
     Public currentParents As (DraggableButton, DraggableButton)
     Public currentAddButton As AddButton
     'Make sure the generations are in the correct order
@@ -25,13 +24,19 @@ Public Class Form1
         Dim button As New DraggableButton()
         dragbuttons.Add(button)
         Dim textbox As New DraggableTextbox()
+        Dim remove As New RemoveFamilyMemberButton
+
         currentbutton = button
         button.myTextbox(textbox)
         textbox.myButton(button)
+        textbox.remove = remove
+        remove.myFamily = textbox
         Me.Controls.Add(textbox)
         Me.Controls.Add(button)
+        Me.Controls.Add(remove)
         isDrawing = False
         startPoint = middlelocation(button)
+        remove.Location = New Point(button.Location.X + 50, button.Location.Y)
         textbox.buttonClicked = True
     End Sub
     Private Sub Form1_RightClick(sender As Object, e As MouseEventArgs) Handles Me.MouseDoubleClick
@@ -83,11 +88,14 @@ Public Class Form1
 
                 End If
                 If item.Item1.isLineButton = False Then
-
-                    e.Graphics.DrawLine(Pens.Black, middlelocation(item.Item1), middlelocationtextbox(item.Item1.associatedTextbox))
+                    If ButtonsShowing = False Then
+                        e.Graphics.DrawLine(Pens.Black, middlelocation(item.Item1), middlelocationtextbox(item.Item1.associatedTextbox))
+                    End If
                 End If
                 If item.Item2.isLineButton = False Then
-                    e.Graphics.DrawLine(Pens.Black, middlelocation(item.Item2), middlelocationtextbox(item.Item2.associatedTextbox))
+                    If ButtonsShowing = False Then
+                        e.Graphics.DrawLine(Pens.Black, middlelocation(item.Item2), middlelocationtextbox(item.Item2.associatedTextbox))
+                    End If
                 End If
                 If item.Item1.isLineButton = False And item.Item2.isLineButton = False Then
                     midpoints.Add(New Point((middlelocation(item.Item1).X + middlelocation(item.Item2).X) / 2, (middlelocation(item.Item1).Y + middlelocation(item.Item2).Y) / 2))
@@ -106,7 +114,7 @@ Public Class Form1
         Dim middleX As Integer
         Dim middleY As Integer
 
-        middleX = btn.Left + btn.Width / 2
+        middleX = btn.Left + btn.Width
         middleY = btn.Top + btn.Height / 2
         Return New Point(middleX, middleY)
     End Function
@@ -128,6 +136,7 @@ Public Class Form1
             Next
             For Each item In dragbuttons
                 item.Hide()
+                item.associatedTextbox.remove.Hide()
             Next
         Else
             Button2.Text = "Hide Buttons"
@@ -137,6 +146,7 @@ Public Class Form1
             Next
             For Each item In dragbuttons
                 item.Show()
+                item.associatedTextbox.remove.Show()
             Next
 
         End If
@@ -246,13 +256,34 @@ Public Class AddButton
     End Sub
 
 End Class
+Public Class RemoveFamilyMemberButton
+    Inherits DraggableButton
+    Public myFamily As DraggableTextbox
+    Public Sub New()
+        Me.SendToBack()
+        Me.Text = "-"
+    End Sub
+    Private Sub RemoveFamily_Click(sender As Object, e As EventArgs) Handles Me.Click
+        Form1.isDrawing = False
+        myFamily.associatedButton.HusbandsAndWives.Clear()
+        For Each line In Form1.Lines
+            If Equals(line.Item1, myFamily.associatedButton) Or Equals(line.Item2, myFamily.associatedButton) Then
+                Form1.Lines.Remove(line)
+            End If
+        Next
+        Form1.Controls.Remove(myFamily.associatedButton)
+        Form1.Controls.Remove(myFamily)
+        Form1.Controls.Remove(Me)
+    End Sub
+End Class
 
 
 Public Class DraggableTextbox
     Inherits TextBox
     Public buttonClicked As Boolean = False
     Private mouseLocation As Point
-    Private associatedButton As DraggableButton
+    Public associatedButton As DraggableButton
+    Public remove As RemoveFamilyMemberButton
 
     Public Sub New()
         Me.AllowDrop = True
@@ -277,6 +308,7 @@ Public Class DraggableTextbox
 
             Dim buttonpoint As New Point(Me.Location.X, Me.Location.Y + 60)
             associatedButton.Location = buttonpoint
+            remove.Location = New Point(buttonpoint.X + 50, buttonpoint.Y)
             updateLocation(buttonpoint, Me)
             If Equals(Form1.currentbutton, associatedButton) And buttonClicked = True Then
                 Form1.startPoint = buttonpoint
@@ -287,6 +319,7 @@ Public Class DraggableTextbox
 
         For Each member In Me.associatedButton.HusbandsAndWives
             member.associatedTextbox.Location = New Point(member.associatedTextbox.Location.X, buttonpoint.Y - 60)
+            member.associatedTextbox.remove.Location = New Point(member.associatedTextbox.Location.X + 50, buttonpoint.Y)
             member.Location = New Point(member.Location.X, buttonpoint.Y)
             If Equals(member.associatedTextbox, notThisTextbox) = False Then
                 member.associatedTextbox.updateLocation(buttonpoint, Me)
@@ -310,7 +343,7 @@ Public Class DraggableButton
 
     Public Sub New()
         Me.AllowDrop = True
-        Me.Size = New Size(100, 30)
+        Me.Size = New Size(50, 30)
         Me.Text = "+"
         If Form1.ButtonsShowing = False Then
             hidebutton()
