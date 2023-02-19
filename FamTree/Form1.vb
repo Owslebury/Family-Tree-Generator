@@ -30,6 +30,10 @@ Public Class Form1
         Dim vScrollBar As New VScrollBar()
         vScrollBar.Dock = DockStyle.Right
         AddHandler vScrollBar.Scroll, AddressOf VScrollBar_Scroll
+        vScrollBar.LargeChange = 500
+        hScrollBar.LargeChange = 500
+        vScrollBar.Maximum = Me.Height * 3
+        hScrollBar.Maximum = Me.Width * 3
 
         ' Add the scrollbars to the form
         Me.Controls.Add(hScrollBar)
