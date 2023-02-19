@@ -64,10 +64,13 @@ Public Class Form1
         For Each line In linestoremove
             Lines.Remove(line)
         Next
+
         For Each member In linebuttonstoremove
-            member.btn2.removeAll
-            member.Remove()
-            LineButtons.Remove(member)
+            If Equals(member, Nothing) = False Then
+                member.btn2.removeAll()
+                member.Remove()
+                LineButtons.Remove(member)
+            End If
         Next
         Invalidate()
     End Sub
@@ -291,7 +294,7 @@ Public Class RemoveFamilyMemberButton
         Me.SendToBack()
         Me.Text = "-"
     End Sub
-    Private Sub RemoveFamily_Click(sender As Object, e As EventArgs) Handles Me.Click
+    Private Sub RemoveFamily_Click(sender As Object, e As EventArgs) Handles Me.MouseDown
         Form1.isDrawing = False
         For Each person In myFamily.associatedButton.HusbandsAndWives
             If Equals(person.associatedTextbox.remove, Me) Then
