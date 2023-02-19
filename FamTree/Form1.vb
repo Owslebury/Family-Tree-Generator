@@ -466,13 +466,21 @@ Public Class DraggableButton
                     If Me.isLineButton Then
                         For i = 0 To Form1.Lines.Count - 1
                             If Equals(Form1.Lines(i).Item1, Form1.currentbutton) Or Equals(Form1.Lines(i).Item2, Form1.currentbutton) Then
-                                invalid = True
+                                If Equals(Form1.getAssociatedlinebutton(Form1.Lines(i)), Nothing) = False Then
+                                    If Form1.getAssociatedlinebutton(Form1.Lines(i)).btn1.location = Me.Location Then
+                                        invalid = True
+                                    End If
+                                End If
                             End If
                         Next
                     Else
                         For i = 0 To Form1.Lines.Count - 1
                             If Equals(Form1.Lines(i).Item1, Me) Or Equals(Form1.Lines(i).Item2, Me) Then
-                                invalid = True
+                                If Equals(Form1.getAssociatedlinebutton(Form1.Lines(i)), Nothing) = False Then
+                                    If Form1.getAssociatedlinebutton(Form1.Lines(i)).btn1.location = Form1.currentbutton.Location Then
+                                        invalid = True
+                                    End If
+                                End If
                             End If
                         Next
                     End If
