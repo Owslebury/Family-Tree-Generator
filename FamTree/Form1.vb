@@ -20,6 +20,53 @@ Public Class Form1
     'Add a save feature
     'Make the lines connect properly
     'Make a right angle line for children
+    Private Sub Form1_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        ' Create the horizontal scrollbar
+        Dim hScrollBar As New HScrollBar()
+        hScrollBar.Dock = DockStyle.Bottom
+        AddHandler hScrollBar.Scroll, AddressOf HScrollBar_Scroll
+
+        ' Create the vertical scrollbar
+        Dim vScrollBar As New VScrollBar()
+        vScrollBar.Dock = DockStyle.Right
+        AddHandler vScrollBar.Scroll, AddressOf VScrollBar_Scroll
+
+        ' Add the scrollbars to the form
+        Me.Controls.Add(hScrollBar)
+        Me.Controls.Add(vScrollBar)
+
+        ' Move all the controls and custom classes along with the scrollbars
+        For Each ctrl As Control In Me.Controls
+            If Not TypeOf ctrl Is HScrollBar And Not TypeOf ctrl Is VScrollBar Then
+                ctrl.Location = New Point(ctrl.Location.X - hScrollBar.Value, ctrl.Location.Y - vScrollBar.Value)
+            End If
+        Next
+    End Sub
+
+    Private Sub HScrollBar_Scroll(sender As Object, e As ScrollEventArgs)
+        ' Move all the controls and custom classes horizontally along with the scrollbar
+        For Each ctrl As Control In Me.Controls
+            If Equals(ctrl, Button1) = False And Equals(ctrl, Button2) = False Then
+                If Not TypeOf ctrl Is HScrollBar And Not TypeOf ctrl Is VScrollBar Then
+                    ctrl.Location = New Point(ctrl.Location.X + e.OldValue - e.NewValue, ctrl.Location.Y)
+                    Invalidate()
+                End If
+            End If
+        Next
+    End Sub
+
+    Private Sub VScrollBar_Scroll(sender As Object, e As ScrollEventArgs)
+        ' Move all the controls and custom classes vertically along with the scrollbar
+        For Each ctrl As Control In Me.Controls
+            If Equals(ctrl, Button1) = False And Equals(ctrl, Button2) = False Then
+                If Not TypeOf ctrl Is HScrollBar And Not TypeOf ctrl Is VScrollBar Then
+                    ctrl.Location = New Point(ctrl.Location.X, ctrl.Location.Y + e.OldValue - e.NewValue)
+                    Invalidate()
+                End If
+            End If
+        Next
+    End Sub
+
     Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
         Dim button As New DraggableButton()
         dragbuttons.Add(button)
@@ -357,6 +404,7 @@ Public Class DraggableTextbox
                 member.associatedTextbox.updateLocation(buttonpoint, Me)
             End If
         Next
+        'this is where family members on a generation keep on the same y axis
     End Sub
 
 End Class
@@ -369,7 +417,9 @@ Public Class DraggableButton
     Private _startPoint As Point
     Public Clicked As Boolean
     Public isLineButton As Boolean = False
+    Public Parents As New List(Of DraggableButton)
     Public HusbandsAndWives As New List(Of DraggableButton)
+    Public Children As New List(Of DraggableButton)
     Public myLineButtons As New List(Of LineButtons)
     Public lines As New List(Of (DraggableButton, DraggableButton))
 
