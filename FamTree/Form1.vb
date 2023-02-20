@@ -13,7 +13,7 @@ Public Class Form1
     Public dragbuttons As New List(Of DraggableButton)
     Public unimportantLines As New List(Of (Point, Point))
     Public currentParents As (DraggableButton, DraggableButton)
-    Public currentAddButton As AddButton
+    Public currentAddButton As New List(Of AddButton)
     'Make sure the generations are in the correct order
     'add ability to remove button/textbox
     'Add ability to add a child without needing another parent, a CHILD button appears when two buttons connected
@@ -237,6 +237,8 @@ Public Class LineButtons
 
 
     Public Sub New(reference As (DraggableButton, DraggableButton), location As Point, onOff As Boolean)
+        reference.Item1.linebuttons.Add(Me)
+        reference.Item2.linebuttons.Add(Me)
         mode = onOff
         If onOff = True Then
             myLocation = location
@@ -325,13 +327,15 @@ Public Class AddButton
     Public Sub New()
         Me.Text = "+"
         isLineButton = True
-        Form1.currentAddButton = Me
+        Form1.currentAddButton.Add(Me)
     End Sub
     Private Sub AddButton_Click(sender As Object, e As EventArgs) Handles Me.Click
         If Form1.isDrawing = False And Equals(Form1.currentbutton, Me) = False Then
             Form1.isDrawing = True
         End If
-        Form1.currentAddButton = Me
+        If Form1.currentAddButton.Contains(Me) = False Then
+            Form1.currentAddButton.Add(Me)
+        End If
         Form1.currentParents = line
         Form1.startPoint = Form1.middlelocation(Me)
         Form1.currentbutton = Me
@@ -423,6 +427,7 @@ Public Class DraggableButton
     Public isLineButton As Boolean = False
     Public Parents As New List(Of DraggableButton)
     Public HusbandsAndWives As New List(Of DraggableButton)
+    Public linebuttons As New List(Of LineButtons)
     Public Children As New List(Of DraggableButton)
     Public myLineButtons As New List(Of LineButtons)
     Public lines As New List(Of (DraggableButton, DraggableButton))
@@ -463,11 +468,14 @@ Public Class DraggableButton
                 Else
                     Dim linebutton As LineButtons = Form1.getAssociatedlinebutton((Form1.currentbutton, Me))
                     Dim invalid As Boolean = False
-                    If Me.isLineButton Then
+                    If Me.isLineButton And Form1.currentbutton.isLineButton Then
+                        invalid = True
+                    End If
+                    If Form1.currentbutton.isLineButton Then
                         For i = 0 To Form1.Lines.Count - 1
                             If Equals(Form1.Lines(i).Item1, Form1.currentbutton) Or Equals(Form1.Lines(i).Item2, Form1.currentbutton) Then
                                 If Equals(Form1.getAssociatedlinebutton(Form1.Lines(i)), Nothing) = False Then
-                                    If Form1.getAssociatedlinebutton(Form1.Lines(i)).btn1.location = Me.Location Then
+                                    If Form1.getAssociatedlinebutton(Form1.Lines(i)).btn1.location = Form1.currentbutton.Location Then
                                         invalid = True
                                     End If
                                 End If
@@ -477,17 +485,26 @@ Public Class DraggableButton
                         For i = 0 To Form1.Lines.Count - 1
                             If Equals(Form1.Lines(i).Item1, Me) Or Equals(Form1.Lines(i).Item2, Me) Then
                                 If Equals(Form1.getAssociatedlinebutton(Form1.Lines(i)), Nothing) = False Then
-                                    If Form1.getAssociatedlinebutton(Form1.Lines(i)).btn1.location = Form1.currentbutton.Location Then
+                                    If Form1.getAssociatedlinebutton(Form1.Lines(i)).btn1.location = Me.Location Then
                                         invalid = True
                                     End If
                                 End If
                             End If
                         Next
                     End If
+                    'this ensures that a line button cannot be added to its own family member
                     If invalid = False Then
                         'Stops add button inbetween parents being added to the same parent
                         Form1.Lines.Add((Form1.currentbutton, Me))
-                        Form1.currentAddButton.associatedRemove.line.Add((Form1.currentbutton, Me))
+                        Form1.currentAddButton.Clear()
+                        If Me.isLineButton = True Then
+                            Form1.currentAddButton.Add(Me)
+                        Else
+                            Form1.currentAddButton.Add(Form1.currentbutton)
+                        End If
+                        For Each item In Form1.currentAddButton
+                            item.associatedRemove.line.Add((Form1.currentbutton, Me))
+                        Next
                     End If
                 End If
             End If
@@ -511,3 +528,4 @@ Public Class DraggableButton
         Me.Show()
     End Sub
 End Class
+
