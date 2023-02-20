@@ -8,11 +8,8 @@ Public Class Form1
     Public LineButtons As New List(Of LineButtons)
     Public LineAssociatedButton As New List(Of ((DraggableButton, DraggableButton), LineButtons))
     Public itemMoving As Boolean = False
-    Public affecteditems As List(Of Button)
     Public ButtonsShowing As Boolean = True
     Public dragbuttons As New List(Of DraggableButton)
-    Public unimportantLines As New List(Of (Point, Point))
-    Public currentParents As (DraggableButton, DraggableButton)
     Public currentAddButton As New List(Of AddButton)
     'Make sure the generations are in the correct order
     'add ability to remove button/textbox
@@ -336,7 +333,6 @@ Public Class AddButton
         If Form1.currentAddButton.Contains(Me) = False Then
             Form1.currentAddButton.Add(Me)
         End If
-        Form1.currentParents = line
         Form1.startPoint = Form1.middlelocation(Me)
         Form1.currentbutton = Me
     End Sub
@@ -421,15 +417,12 @@ Public Class DraggableButton
     Inherits Button
     Private mouseLocation As Point
     Public associatedTextbox As DraggableTextbox
-    Private _mouseDown As Boolean
-    Private _startPoint As Point
     Public Clicked As Boolean
     Public isLineButton As Boolean = False
     Public Parents As New List(Of DraggableButton)
     Public HusbandsAndWives As New List(Of DraggableButton)
     Public linebuttons As New List(Of LineButtons)
     Public Children As New List(Of DraggableButton)
-    Public myLineButtons As New List(Of LineButtons)
     Public lines As New List(Of (DraggableButton, DraggableButton))
 
     Public Sub New()
@@ -461,7 +454,6 @@ Public Class DraggableButton
                     Form1.currentbutton.HusbandsAndWives.Add(Me)
                     HusbandsAndWives.Add(Form1.currentbutton)
                     Dim linebutton As New LineButtons((Form1.currentbutton, Me), midPoint, True)
-                    myLineButtons.Add(linebutton)
                     Form1.Lines.Add((Form1.currentbutton, Me))
                     Form1.LineButtons.Add(linebutton)
                     Form1.LineAssociatedButton.Add(((Form1.currentbutton, Me), linebutton))
