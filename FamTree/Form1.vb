@@ -1,4 +1,5 @@
-﻿Imports System.Net
+﻿Imports System.Diagnostics.Metrics
+Imports System.Net
 
 Public Class Form1
     Public isDrawing As Boolean = False
@@ -244,6 +245,7 @@ Public Class LineButtons
             btn1 = New AddButton
             btn1.Size = New Size(20, 20)
             btn1.Location = New Point(location.X - 10, location.Y)
+            btn1.line = reference
             Form1.Controls.Add(btn1)
 
             'Create the second button
@@ -367,6 +369,7 @@ Public Class DraggableTextbox
     Private mouseLocation As Point
     Public associatedButton As DraggableButton
     Public remove As RemoveFamilyMemberButton
+    Private isClickDisabled As Boolean = False
 
     Public Sub New()
         Me.AllowDrop = True
@@ -380,21 +383,43 @@ Public Class DraggableTextbox
     Private Sub DraggableTextbox_MouseDown(sender As Object, e As MouseEventArgs) Handles Me.MouseDown
         mouseLocation = e.Location
         Form1.itemMoving = False
+        isClickDisabled = False
+
     End Sub
 
     Private Sub DraggableTextbox_MouseMove(sender As Object, e As MouseEventArgs) Handles Me.MouseMove
+        Dim invalid As Boolean = False
         If e.Button = MouseButtons.Left Then
             Form1.Invalidate()
             Form1.itemMoving = True
-            Me.Left = e.X + Me.Left - mouseLocation.X
-            Me.Top = e.Y + Me.Top - mouseLocation.Y
 
-            Dim buttonpoint As New Point(Me.Location.X, Me.Location.Y + 60)
-            associatedButton.Location = buttonpoint
-            remove.Location = New Point(buttonpoint.X + 50, buttonpoint.Y)
-            updateLocation(buttonpoint, Me)
-            If Equals(Form1.currentbutton, associatedButton) And buttonClicked = True Then
-                Form1.startPoint = buttonpoint
+            Dim buttonpoint As New Point
+            If associatedButton.Parents.Count <> 0 Then
+                If Me.Location.Y < associatedButton.Parents(0).Location.Y Then
+                    Me.Location = New Point(Me.Location.X, Me.Location.Y + 70)
+                    buttonpoint = New Point(Me.Location.X, Me.Location.Y + 60)
+                    associatedButton.Location = buttonpoint
+                    remove.Location = New Point(buttonpoint.X + 50, buttonpoint.Y)
+                    updateLocation(buttonpoint, Me)
+                    If Equals(Form1.currentbutton, associatedButton) And buttonClicked = True Then
+                        Form1.startPoint = buttonpoint
+                    End If
+                    invalid = True
+                    isClickDisabled = True
+                End If
+            End If
+            If isClickDisabled = False Then
+                Me.Left = e.X + Me.Left - mouseLocation.X
+                Me.Top = e.Y + Me.Top - mouseLocation.Y
+
+                buttonpoint = New Point(Me.Location.X, Me.Location.Y + 60)
+                associatedButton.Location = buttonpoint
+                remove.Location = New Point(buttonpoint.X + 50, buttonpoint.Y)
+                updateLocation(buttonpoint, Me)
+                If Equals(Form1.currentbutton, associatedButton) And buttonClicked = True Then
+                    Form1.startPoint = buttonpoint
+                End If
+
             End If
         End If
     End Sub
@@ -408,7 +433,6 @@ Public Class DraggableTextbox
                 member.associatedTextbox.updateLocation(buttonpoint, Me)
             End If
         Next
-        'this is where family members on a generation keep on the same y axis
     End Sub
 
 End Class
@@ -483,8 +507,20 @@ Public Class DraggableButton
                         Form1.currentAddButton.Clear()
                         If Me.isLineButton = True Then
                             Form1.currentAddButton.Add(Me)
+                            For Each button In Form1.currentAddButton
+                                button.line.Item1.Children.Add(Form1.currentbutton)
+                                button.line.Item2.Children.Add(Form1.currentbutton)
+                                Form1.currentbutton.Parents.Add(button.line.Item1)
+                                Form1.currentbutton.Parents.Add(button.line.Item2)
+                            Next
                         Else
                             Form1.currentAddButton.Add(Form1.currentbutton)
+                            For Each button In Form1.currentAddButton
+                                button.line.Item1.Children.Add(Me)
+                                button.line.Item2.Children.Add(Me)
+                                Parents.Add(button.line.Item1)
+                                Parents.Add(button.line.Item2)
+                            Next
                         End If
                         For Each item In Form1.currentAddButton
                             item.associatedRemove.line.Add((Form1.currentbutton, Me))
@@ -512,3 +548,7 @@ Public Class DraggableButton
         Me.Show()
     End Sub
 End Class
+
+
+
+
