@@ -301,13 +301,42 @@ Public Class RemoveButton
         isLineButton = True
     End Sub
     Private Sub RemoveButton_Click(sender As Object, e As EventArgs) Handles Me.Click
+        For Each item In line
+            If Equals(item.Item1.associatedTextbox, Nothing) = False Then
+                item.Item1.associatedTextbox.constraint = Nothing
+            End If
+            If Equals(item.Item2.associatedTextbox, Nothing) = False Then
+                item.Item2.associatedTextbox.constraint = Nothing
+            End If
+        Next
         Form1.isDrawing = False
+        For Each item In line
+            For Each child In item.Item1.Children
+                child.Parents = New List(Of DraggableButton)
+                child.associatedTextbox.constraint = Nothing
+                For Each member In child.HusbandsAndWives
+                    member.associatedTextbox.constraint = Nothing
+                Next
+            Next
+            For Each child In item.Item2.Children
+                child.Parents = New List(Of DraggableButton)
+                child.associatedTextbox.constraint = Nothing
+                For Each member In child.HusbandsAndWives
+                    member.associatedTextbox.constraint = Nothing
+                Next
+            Next
+        Next
+        For Each item In line
+            item.Item1.Children.Clear()
+            item.Item2.Children.Clear()
+        Next
         For Each item In line
             Form1.Lines.Remove(item)
             item.Item1.HusbandsAndWives.Remove(item.Item2)
             item.Item2.HusbandsAndWives.Remove(item.Item1)
         Next
         linebutton.Remove()
+
     End Sub
     Public Sub removeAll()
         Form1.isDrawing = False
@@ -354,7 +383,26 @@ Public Class RemoveFamilyMemberButton
                 person.HusbandsAndWives.Remove(Me.associatedTextbox.associatedButton)
             End If
         Next
+        For Each person In myFamily.associatedButton.Children
+            person.Parents.Clear()
+            person.associatedTextbox.constraint = Nothing
+        Next
         myFamily.associatedButton.HusbandsAndWives.Clear()
+        Dim linestoremove As New List(Of (DraggableButton, DraggableButton))
+        For Each member In myFamily.associatedButton.linebuttons
+            member.Remove()
+            For Each line In Form1.Lines
+                For Each child In myFamily.associatedButton.Children
+                    If (Equals(line.Item1, child) Or Equals(line.Item2, child)) And (Equals(line.Item1, myFamily.associatedButton) Or Equals(line.Item2, myFamily.associatedButton)) Then
+                        linestoremove.Add(line)
+                    End If
+                Next
+            Next
+            For Each line In linestoremove
+                Form1.Lines.Remove(line)
+            Next
+        Next
+
         Form1.removeLine(myFamily.associatedButton)
         Form1.Controls.Remove(myFamily.associatedButton)
         Form1.Controls.Remove(myFamily)
@@ -370,6 +418,7 @@ Public Class DraggableTextbox
     Public associatedButton As DraggableButton
     Public remove As RemoveFamilyMemberButton
     Private isClickDisabled As Boolean = False
+    Public constraint As DraggableButton
 
     Public Sub New()
         Me.AllowDrop = True
@@ -394,8 +443,11 @@ Public Class DraggableTextbox
             Form1.itemMoving = True
 
             Dim buttonpoint As New Point
-            If associatedButton.Parents.Count <> 0 Then
-                If Me.Location.Y < associatedButton.Parents(0).Location.Y Then
+            If associatedButton.Parents.Count <> 0 Or Equals(constraint, Nothing) = False Then
+                If associatedButton.Parents.Count <> 0 Then
+                    constraint = associatedButton.Parents(0)
+                End If
+                If Me.Location.Y < constraint.Location.Y Then
                     Me.Location = New Point(Me.Location.X, Me.Location.Y + 70)
                     buttonpoint = New Point(Me.Location.X, Me.Location.Y + 60)
                     associatedButton.Location = buttonpoint
@@ -406,22 +458,32 @@ Public Class DraggableTextbox
                     End If
                     invalid = True
                     isClickDisabled = True
+                    For Each member In associatedButton.HusbandsAndWives
+                        member.associatedTextbox.constraint = constraint
+                    Next
                 End If
             End If
-            If isClickDisabled = False Then
-                Me.Left = e.X + Me.Left - mouseLocation.X
-                Me.Top = e.Y + Me.Top - mouseLocation.Y
-
-                buttonpoint = New Point(Me.Location.X, Me.Location.Y + 60)
-                associatedButton.Location = buttonpoint
-                remove.Location = New Point(buttonpoint.X + 50, buttonpoint.Y)
-                updateLocation(buttonpoint, Me)
-                If Equals(Form1.currentbutton, associatedButton) And buttonClicked = True Then
-                    Form1.startPoint = buttonpoint
+            If Equals(constraint, Nothing) Then
+                    For Each member In associatedButton.HusbandsAndWives
+                        If Equals(member.associatedTextbox.constraint, Nothing) = False Then
+                            constraint = member.associatedTextbox.constraint
+                        End If
+                    Next
                 End If
+                If isClickDisabled = False Then
+                    Me.Left = e.X + Me.Left - mouseLocation.X
+                    Me.Top = e.Y + Me.Top - mouseLocation.Y
 
+                    buttonpoint = New Point(Me.Location.X, Me.Location.Y + 60)
+                    associatedButton.Location = buttonpoint
+                    remove.Location = New Point(buttonpoint.X + 50, buttonpoint.Y)
+                    updateLocation(buttonpoint, Me)
+                    If Equals(Form1.currentbutton, associatedButton) And buttonClicked = True Then
+                        Form1.startPoint = buttonpoint
+                    End If
+
+                End If
             End If
-        End If
     End Sub
     Public Sub updateLocation(buttonpoint As Point, notThisTextbox As TextBox)
 
